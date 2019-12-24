@@ -3,7 +3,7 @@ import java.awt.event.InputEvent;
 
 class Mouse {
 
-    final private static int[][] board_coordinates = new int[][]{
+    final private static int[][] currentStateCoordinates = new int[][]{
             {147, 95}, {201, 95}, {255, 95},
             {120, 142}, {174, 142}, {228, 142}, {282, 142},
             {93, 189}, {147, 189}, {201, 189}, {255, 189}, {309, 189},
@@ -17,7 +17,7 @@ class Mouse {
             final String button = action.substring(0, 1);
             final byte index = Byte.valueOf(action.substring(1));
 
-            final int[] coordinate = board_coordinates[index];
+            final int[] coordinate = currentStateCoordinates[index];
             robot.mouseMove(coordinate[0] + offsetX, coordinate[1] + offsetY);
             if (button.equals(("R"))) {
                 robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);

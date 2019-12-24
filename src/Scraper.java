@@ -7,7 +7,7 @@ import static java.util.Map.entry;
 
 class Scraper {
 
-    final private static int[][] board_coordinates = new int[][]{
+    final private static int[][] currentStateCoordinates = new int[][]{
             {147, 95}, {201, 95}, {255, 95},
             {120, 142}, {174, 142}, {228, 142}, {282, 142},
             {93, 189}, {147, 189}, {201, 189}, {255, 189}, {309, 189},
@@ -15,7 +15,7 @@ class Scraper {
             {147, 283}, {201, 283}, {255, 283}
     };
 
-    final private static int[][] target_coordinates = new int[][]{
+    final private static int[][] targetStateCoordinates = new int[][]{
             {448, 50}, {475, 50}, {502, 50},
             {435, 74}, {462, 74}, {488, 74}, {515, 74},
             {421, 97}, {448, 97}, {475, 97}, {502, 97}, {529, 97},
@@ -23,7 +23,7 @@ class Scraper {
             {448, 144}, {475, 144}, {502, 144}
     };
 
-    final private static Set<String> boardRGBCodes = Set.of(
+    final private static Set<String> currentStateCodes = Set.of(
             "2216_3384_416",
             "3680_336_3216",
             "3196_848_564",
@@ -37,7 +37,7 @@ class Scraper {
             "4136_1736_3116"
     );
 
-    final private static Set<String> targetRGBCodes = Set.of(
+    final private static Set<String> targetStateCodes = Set.of(
             "2704_4276_404",
             "3992_248_3488",
             "2756_580_268",
@@ -51,7 +51,7 @@ class Scraper {
             "4520_1948_3428"
     );
 
-    final private static Map<String, String> targetCodesToBoardCodes = Map.ofEntries(
+    final private static Map<String, String> currentStateCodeToTargetStateCode = Map.ofEntries(
             entry("2216_3384_416", "2704_4276_404"),    // gecko
             entry("3680_336_3216", "3992_248_3488"),    // purple flower
             entry("3196_848_564", "2756_580_268"),      // lady bug
@@ -73,10 +73,7 @@ class Scraper {
         final int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
         for (int i = 0; i < pixels.length; i++) {
             final int pixel = pixels[i];
-            final int r = (pixel >> 16) & 0xff;
-            final int g = (pixel >> 8) & 0xff;
-            final int b = pixel & 0xff;
-            if (r == 116 && g == 160 && b == 52) {
+            if (((pixel >> 16) & 0xff) == 116 && ((pixel >> 8) & 0xff) == 160 && (pixel & 0xff) == 52) {
                 final int x = i % SCREEN_CAPTURE_WIDTH;
                 final int y = Math.floorDiv(i, SCREEN_CAPTURE_WIDTH);
                 return new Point(x, y);
@@ -92,80 +89,64 @@ class Scraper {
         final BufferedImage image = new Robot().createScreenCapture(rectangle);
         final int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 
-        final int[] targetValuesRed = new int[19];
-        final int[] targetValuesGreen = new int[19];
-        final int[] targetValuesBlue = new int[19];
-        for (int k = 0; k < 19; k++) {
-            final int[] center = target_coordinates[k];
-            final int x = center[0];
-            final int y = center[1];
-            for (int i = y - 2; i <= y + 2; i++) {
-                for (int j = x - 2; j <= x + 2; j++) {
-                    final int pixel = pixels[i * 628 + j];
-                    final int r = (pixel >> 16) & 0xff;
-                    final int g = (pixel >> 8) & 0xff;
-                    final int b = pixel & 0xff;
-                    targetValuesRed[k] += r;
-                    targetValuesGreen[k] += g;
-                    targetValuesBlue[k] += b;
-                }
-            }
-        }
+        final String[] targetStateValues = getStateValues(pixels, targetStateCoordinates);
+        final String[] currentStateValues = getStateValues(pixels, currentStateCoordinates);
 
-        final int[] boardValuesRed = new int[19];
-        final int[] boardValuesGreen = new int[19];
-        final int[] boardValuesBlue = new int[19];
-        for (int k = 0; k < 19; k++) {
-            final int[] center = board_coordinates[k];
-            final int x = center[0];
-            final int y = center[1];
-            for (int i = y - 2; i <= y + 2; i++) {
-                for (int j = x - 2; j <= x + 2; j++) {
-                    final int pixel = pixels[i * 628 + j];
-                    final int r = (pixel >> 16) & 0xff;
-                    final int g = (pixel >> 8) & 0xff;
-                    final int b = pixel & 0xff;
-                    boardValuesRed[k] += r;
-                    boardValuesGreen[k] += g;
-                    boardValuesBlue[k] += b;
-                }
-            }
-        }
-
-        final Map<String, Byte> targetCodeToBoardNumber = new HashMap<>();
+        final Map<String, Byte> targetStateCodeToNumber = new HashMap<>();
         byte number = 0;
-        final byte[] target = new byte[19];
+        final byte[] targetState = new byte[19];
         for (int i = 0; i < 19; i++) {
-            final String targetValue = targetValuesRed[i] + "_" + targetValuesGreen[i] + "_" + targetValuesBlue[i];
-
-            if (!targetRGBCodes.contains(targetValue))
+            final String value = targetStateValues[i];
+            if (!targetStateCodes.contains(value))
                 return null;
 
-            if (!targetCodeToBoardNumber.containsKey(targetValue)) {
-                targetCodeToBoardNumber.put(targetValue, number);
+            if (!targetStateCodeToNumber.containsKey(value)) {
+                targetStateCodeToNumber.put(value, number);
                 number++;
             }
-
-            target[i] = targetCodeToBoardNumber.get(targetValue);
+            targetState[i] = targetStateCodeToNumber.get(value);
         }
 
-        final byte[] board = new byte[19];
+        final byte[] currentState = new byte[19];
         for (int i = 0; i < 19; i++) {
-            final String boardValue = boardValuesRed[i] + "_" + boardValuesGreen[i] + "_" + boardValuesBlue[i];
+            final String value = currentStateValues[i];
 
-            if (!boardRGBCodes.contains(boardValue))
+            if (!currentStateCodes.contains(value))
                 return null;
 
-            board[i] = targetCodeToBoardNumber.get(targetCodesToBoardCodes.get(boardValue));
+            currentState[i] = targetStateCodeToNumber.get(currentStateCodeToTargetStateCode.get(value));
         }
 
-        final byte[] copyOfBoard = Arrays.copyOf(board, 19);
-        final byte[] copyOfTarget = Arrays.copyOf(target, 19);
-        Arrays.sort(copyOfBoard);
-        Arrays.sort(copyOfTarget);
-        if (!Arrays.equals(copyOfBoard, copyOfTarget))
+        final byte[] currentStateCopy = Arrays.copyOf(currentState, 19);
+        final byte[] targetStateCopy = Arrays.copyOf(targetState, 19);
+        Arrays.sort(currentStateCopy);
+        Arrays.sort(targetStateCopy);
+        if (!Arrays.equals(currentStateCopy, targetStateCopy))
             return null;
 
-        return new Puzzle(board, target);
+        return new Puzzle(currentState, targetState);
+    }
+
+    private static String[] getStateValues(int[] pixels, int[][] coordinates) {
+        final String[] foo = new String[19];
+        for (int k = 0; k < 19; k++) {
+            final int[] coordinate = coordinates[k];
+            final int x = coordinate[0];
+            final int y = coordinate[1];
+
+            int rTotal = 0;
+            int gTotal = 0;
+            int bTotal = 0;
+            for (int i = y - 2; i <= y + 2; i++) {
+                for (int j = x - 2; j <= x + 2; j++) {
+                    final int pixel = pixels[i * 628 + j];
+                    rTotal += (pixel >> 16) & 0xff;
+                    gTotal += (pixel >> 8) & 0xff;
+                    bTotal += pixel & 0xff;
+                }
+            }
+            foo[k]  = rTotal + "_" + gTotal + "_" + bTotal;
+        }
+        return foo;
     }
 }

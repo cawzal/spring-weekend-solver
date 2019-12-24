@@ -1,18 +1,18 @@
 class Puzzle {
 
-    private byte[] board;
-    private byte[] target;
+    private byte[] currentState;
+    private byte[] targetState;
 
-    Puzzle(byte[] board, byte[] target) {
-        this.board = board;
-        this.target = target;
+    Puzzle(byte[] currentState, byte[] targetState) {
+        this.currentState = currentState ;
+        this.targetState = targetState;
     }
 
-    byte[] getBoard() {
-        return board;
+    byte[] getCurrentState() {
+        return currentState;
     }
 
-    byte[] getTarget() {
-        return target;
+    byte[] getTargetState() {
+        return targetState;
     }
 }
