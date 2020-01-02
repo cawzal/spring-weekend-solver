@@ -10,7 +10,8 @@ public class Main {
         }
 
         // Solver solver = new SolverBFS();
-        Solver solver = new SolverIDDFS();
+        // Solver solver = new SolverIDDFS();
+        Solver solver = new SolverIDAStar();
         for (int i = 1; i <= 5; i++) {
             Puzzle puzzle;
             do {
