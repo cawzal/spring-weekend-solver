@@ -85,5 +85,15 @@ abstract class Solver {
         }
     }
 
+    int calculateEstimatedCost(byte[] currentState, byte[] targetState) {
+        int distance = 0;
+        for (int i = 0; i < 19; i++) {
+            if (currentState[i] != targetState[i]) {
+                distance++;
+            }
+        }
+        return (distance == 0) ? 0 : Math.max((int) Math.floor(distance / 6), 1);
+    }
+
     abstract String[] solve(byte[] currentState, byte[] targetState);
 }
